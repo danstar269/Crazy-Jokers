@@ -1,0 +1,14 @@
+{
+	"id": "crazy_jokers",
+	"name": "Crazy Jokers",
+	"display_name": "Crazy",
+	"author": ["Dan269"],
+	"description": "Adds 2 crazy jokers.",
+	"prefix": "crazy",
+	"main_file": "crazy_jokers.lua",
+	"priority": 0,
+	"badge_colour": "1F17A2",
+	"badge_text_colour": "FFFFFF",
+	"version": "1.0.0",
+	"dependencies": [],
+}
