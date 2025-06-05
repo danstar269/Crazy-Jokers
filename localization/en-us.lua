@@ -23,8 +23,8 @@ return {
 				'contains a {C:attention}#4#{}',
 				"poker hand changes",
 				"at the end of the round.",
-				'{C:attention}Retrigger{} all played cards {C:attention}#5#{} times',
-				'{C:red}destroy{} any scored {C:hearts}#6#{}',
+				'{C:attention}Retrigger{} all played cards {C:attention}#5#{} times.',
+				'{C:red}Destroy{} any scored {C:hearts}#6#{}',
 				'earn {C:money}$#3#{} per card destroyed.',
 				'{C:inactive}(Currently{} {C:red}+#1#{} {C:inactive}Mult){}'
 				},

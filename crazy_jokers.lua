@@ -6,6 +6,8 @@ SMODS.Atlas{
 	atlas_table = 'ASSET_ATLAS'
 }
 
+
+
 --Talking Joker
 SMODS.Joker{
 	key = 'talking_joker',
@@ -147,6 +149,7 @@ SMODS.Joker {
 	pos = {x = 2, y = 0},
 	rarity = 1,
 	cost = 5,
+	blueprint_compat = false,
     config = { 
 		extra = { 
 			discard_size = 1,
