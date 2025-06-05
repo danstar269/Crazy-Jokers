@@ -3,7 +3,7 @@
 	"name": "Crazy Jokers",
 	"display_name": "Crazy",
 	"author": ["Dan269"],
-	"description": "Adds 2 crazy jokers.",
+	"description": "Adds 3 crazy jokers.",
 	"prefix": "crazy",
 	"main_file": "crazy_jokers.lua",
 	"priority": 0,
