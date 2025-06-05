@@ -1,8 +1,8 @@
 SMODS.Atlas{
 	key = 'crazy_jokers_atlas',
 	path = 'Jokers.png',
-	px = 72, 
-	py = 96,
+	px = 73, 
+	py = 97,
 	atlas_table = 'ASSET_ATLAS'
 }
 
@@ -46,6 +46,8 @@ SMODS.Joker{
 		end
 	end
 }
+
+
 
 --Arizona Ranger
 SMODS.Joker{
@@ -112,20 +114,6 @@ SMODS.Joker{
 					context.full_hand[i]:destroying_card()
 				end
 			end
-		
-			--[[G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + card.ability.extra.dollars
-			context.destroying_card = context.other_card
-            return {
-                dollars = card.ability.extra.dollars,
-                func = function() -- This is for timing purposes, it runs after the dollar manipulation
-                    G.E_MANAGER:add_event(Event({
-                        func = function()
-                            G.GAME.dollar_buffer = 0
-                            return true
-                        end
-                    }))
-                end
-            }]]--
         end
 		if context.repetition and context.cardarea == G.play then
             return {
@@ -148,4 +136,52 @@ SMODS.Joker{
             pseudoseed((card.area and card.area.config.type == 'title') and 'vremade_false_to_do' or 'vremade_to_do'))
 		end
 	end
+}
+
+
+
+--Black Deck Enjoyer
+SMODS.Joker {
+    key = "blackdeck_joker",
+	atlas = 'crazy_jokers_atlas',
+	pos = {x = 2, y = 0},
+	rarity = 1,
+	cost = 5,
+    config = { 
+		extra = { 
+			discard_size = 1,
+			shop_size = 2,
+			discount_reroll = 5,
+		}
+	},
+    loc_vars = function(self, info_queue, card)
+        return { 
+			vars = { 
+				card.ability.extra.discard_size,
+				card.ability.extra.shop_size,
+				card.ability.extra.discount_reroll
+			} 
+		}
+    end,
+    add_to_deck = function(self, card, from_debuff)
+		G.GAME.round_resets.discards = G.GAME.round_resets.discards + card.ability.extra.discard_size
+        ease_discard(card.ability.extra.discard_size)
+		G.E_MANAGER:add_event(Event({func = function()
+            change_shop_size(card.ability.extra.shop_size)
+            return true end }))
+		G.E_MANAGER:add_event(Event({func = function()
+            G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - card.ability.extra.discount_reroll
+            G.GAME.current_round.reroll_cost = math.max(0, G.GAME.current_round.reroll_cost - card.ability.extra.discount_reroll)
+            return true end }))
+	end,
+	remove_from_deck = function(self, card, from_debuff)
+		G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discard_size
+        ease_discard(-card.ability.extra.discard_size)
+		G.E_MANAGER:add_event(Event({func = function()
+            change_shop_size(-card.ability.extra.shop_size)
+            return true end }))
+		G.E_MANAGER:add_event(Event({func = function()
+            G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + card.ability.extra.discount_reroll
+            return true end }))
+	end,
 }
