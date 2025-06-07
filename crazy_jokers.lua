@@ -12,8 +12,9 @@ SMODS.optional_features = { cardareas = {}, post_trigger = true, quantum_enhance
 
 --Talking Joker
 SMODS.Joker{
-	key = 'talking_joker',
-	atlas = 'crazy_jokers_atlas',
+	key = "talking_joker",
+	name = "talking_joker",
+	atlas = "crazy_jokers_atlas",
 	pos = {x = 0, y = 0},
 	rarity = 1,
 	cost = 6,
@@ -55,8 +56,9 @@ SMODS.Joker{
 
 --Arizona Ranger
 SMODS.Joker{
-	key = 'arizona_ranger',
-	atlas = 'crazy_jokers_atlas',
+	key = "arizona_ranger",
+	name = "arizona_ranger",
+	atlas = "crazy_jokers_atlas",
 	pos = {x = 1, y = 0},
 	rarity = 2,
 	cost = 7,
@@ -147,7 +149,8 @@ SMODS.Joker{
 --Black Deck Enjoyer
 SMODS.Joker {
     key = "blackdeck_joker",
-	atlas = 'crazy_jokers_atlas',
+	name = "blackdeck_joker",
+	atlas = "crazy_jokers_atlas",
 	pos = {x = 2, y = 0},
 	rarity = 1,
 	cost = 5,
@@ -197,8 +200,9 @@ SMODS.Joker {
 
 --Cameraman
 SMODS.Joker {
-	key = 'cameraman',
-	atlas = 'crazy_jokers_atlas',
+	key = "cameraman",
+	name = "cameraman",
+	atlas = "crazy_jokers_atlas",
 	pos = {x = 3, y = 0},
 	rarity = 1,
 	cost = 5,
@@ -209,6 +213,7 @@ SMODS.Joker {
 			dollars = 2,
 			mult = 5,
 			mult_buffer = 0,
+			dollar_buffer = 0,
 		}
 	},
 	loc_vars = function(self, info_queue, card)
@@ -217,6 +222,7 @@ SMODS.Joker {
 				card.ability.extra.dollars,
 				card.ability.extra.mult,
 				card.ability.extra.mult_buffer,
+				card.ability.extra.dollar_buffer,
 			} 
 		}
     end,
@@ -225,18 +231,121 @@ SMODS.Joker {
         for i = 1, #G.jokers.cards do
             if G.jokers.cards[i] == card then other_joker = G.jokers.cards[i + 1] end
         end
-		if context.post_trigger and context.other_context ~= context.individual and context.other_context.cardarea ~= G.play then
-			if context.other_card == other_joker and context.other_context ~= context.repetition then
+		if context.post_trigger and context.other_context ~= context.repetition then
+			if context.other_card == other_joker then
 				card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
 				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 				{ message = localize('k_caught'), colour = G.C.BLUE })
 				card_eval_status_text(context.blueprint_card or card, 'dollars', card.ability.extra.dollars, nil, nil, nil)
-				G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + card.ability.extra.dollars
 				return {
 					remove_default_message = true,
 					dollars = card.ability.extra.dollars,
 					card = card or context.other_card or nil,
 				}
+			end
+		end
+		if context.after and context.main_eval then
+			if other_joker.ability.name == 'Sock and Buskin' then
+				local j = 0
+				while j < other_joker.ability.extra do
+					for i = 1, #context.full_hand do
+						if context.full_hand[i]:is_face() then
+							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+						end
+					end
+					j = j + 1
+				end
+				local bufdollar = card.ability.extra.dollar_buffer
+				card.ability.extra.dollar_buffer = 0
+				if bufdollar > 0 then
+					return {
+						dollars = bufdollar,
+					}
+				else 
+					return
+				end
+			end
+			if other_joker.ability.name == 'Hanging Chad' then
+				return {
+					dollars = card.ability.extra.dollars * 2,
+				}
+			end
+			if other_joker.ability.name == 'Dusk' and G.GAME.current_round.hands_left == 0 then
+				local j = 0
+				while j < other_joker.ability.extra do
+					for i = 1, #context.full_hand do
+						card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+					end
+					j = j + 1
+				end
+				local bufdollar = card.ability.extra.dollar_buffer
+				card.ability.extra.dollar_buffer = 0
+				if bufdollar > 0 then
+					return {
+						dollars = bufdollar,
+					}
+				else 
+					return
+				end
+			end
+			if other_joker.ability.name == 'Seltzer' then
+				local j = 0
+				while j < other_joker.ability.extra do
+					for i = 1, #context.full_hand do
+						card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+					end
+					j = j + 1
+				end
+				local bufdollar = card.ability.extra.dollar_buffer
+				card.ability.extra.dollar_buffer = 0
+				if bufdollar > 0 then
+					return {
+						dollars = bufdollar,
+					}
+				else 
+					return
+				end
+			end
+			if other_joker.ability.name == 'Hack' then
+				local j = 0
+				while j < other_joker.ability.extra do
+					for i = 1, #context.full_hand do
+						if (context.full_hand[i]:get_id() == 2 or 
+							context.full_hand[i]:get_id() == 3 or 
+							context.full_hand[i]:get_id() == 4 or 
+							context.full_hand[i]:get_id() == 5) then
+								card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+						end
+					end
+					j = j + 1
+				end
+				local bufdollar = card.ability.extra.dollar_buffer
+				card.ability.extra.dollar_buffer = 0
+				if bufdollar > 0 then
+					return {
+						dollars = bufdollar,
+					}
+				else 
+					return
+				end
+			end
+			if other_joker.ability.name == 'arizona_ranger' then
+				local j = 0
+				while j < other_joker.ability.extra.repetitions do
+					for i = 1, #context.full_hand do
+						card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+					end
+					j = j + 1
+				end
+				local bufdollar = card.ability.extra.dollar_buffer
+				card.ability.extra.dollar_buffer = 0
+				if bufdollar > 0 then
+					return {
+						dollars = bufdollar,
+					}
+				else 
+					return
+				end
 			end
 		end
 		if context.joker_main then
