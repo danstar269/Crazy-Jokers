@@ -6,6 +6,8 @@ SMODS.Atlas{
 	atlas_table = 'ASSET_ATLAS'
 }
 
+SMODS.optional_features = { cardareas = {}, post_trigger = true, quantum_enhancements = true, retrigger_joker = true }
+
 
 
 --Talking Joker
@@ -176,6 +178,8 @@ SMODS.Joker {
             G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - card.ability.extra.discount_reroll
             G.GAME.current_round.reroll_cost = math.max(0, G.GAME.current_round.reroll_cost - card.ability.extra.discount_reroll)
             return true end }))
+		card_eval_status_text(card, 'extra', nil, nil, nil,
+		{ message = 'Buckle up!', colour = G.C.BLACK, instant = true })
 	end,
 	remove_from_deck = function(self, card, from_debuff)
 		G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discard_size
@@ -187,4 +191,48 @@ SMODS.Joker {
             G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + card.ability.extra.discount_reroll
             return true end }))
 	end,
+}
+
+
+
+--Cameraman
+SMODS.Joker {
+	key = 'cameraman',
+	atlas = 'crazy_jokers_atlas',
+	pos = {x = 3, y = 0},
+	rarity = 1,
+	cost = 5,
+	blueprint_compat = true,
+	perishable_compat = false,
+	config = { 
+		extra = { 
+			dollars = 3,
+			mult = 10,
+		}
+	},
+	loc_vars = function(self, info_queue, card)
+		return { 
+			vars = { 
+				card.ability.extra.dollars,
+				card.ability.extra.mult
+			} 
+		}
+    end,
+	calculate = function(self, card, context)
+		local other_joker = nil
+        for i = 1, #G.jokers.cards do
+            if G.jokers.cards[i] == card then other_joker = G.jokers.cards[i + 1] end
+        end
+		if context.post_trigger then
+			if context.other_card == other_joker then
+				return {
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = 'Caught!', colour = G.C.BLUE, instant = true }),
+					card = card or context.other_card or nil,
+					dollars = card.ability.extra.dollars,
+					mult = card.ability.extra.mult,
+				}
+			end
+		end
+	end
 }
