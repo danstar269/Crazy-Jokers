@@ -206,15 +206,17 @@ SMODS.Joker {
 	perishable_compat = false,
 	config = { 
 		extra = { 
-			dollars = 3,
-			mult = 10,
+			dollars = 2,
+			mult = 5,
+			mult_buffer = 0,
 		}
 	},
 	loc_vars = function(self, info_queue, card)
 		return { 
 			vars = { 
 				card.ability.extra.dollars,
-				card.ability.extra.mult
+				card.ability.extra.mult,
+				card.ability.extra.mult_buffer,
 			} 
 		}
     end,
@@ -225,14 +227,27 @@ SMODS.Joker {
         end
 		if context.post_trigger then
 			if context.other_card == other_joker then
+				card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
 				return {
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = 'Caught!', colour = G.C.BLUE, instant = true }),
 					card = card or context.other_card or nil,
 					dollars = card.ability.extra.dollars,
-					mult = card.ability.extra.mult,
 				}
 			end
+		end
+		if context.joker_main then
+			local last_mult = card.ability.extra.mult_buffer
+			card.ability.extra.mult_buffer = 0.0
+			return {
+				mult = last_mult,
+			}
+		end
+		if context.after and context.cardarea == G.jokers then
+			return {
+				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+				{ message = localize('k_reset') }),
+			}
 		end
 	end
 }

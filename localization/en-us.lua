@@ -39,8 +39,11 @@ return {
 			j_crazy_cameraman = {
 				name = 'Cameraman',
 				text = {
-					'When the {C:attention}Joker{} on the right {C:attention}triggers{}',
-					'earn {C:money}$#1#{} and give {C:red}+#2#{} Mult.'
+					'When the effect of the {C:attention}Joker{}',
+					'on the right {C:attention}triggers{}',
+					'earn {C:money}$#1#{} and earn {C:red}+#2#{} Mult.',
+					'Mult {C:attention}resets{} after each hand played.',
+					'{C:inactive}(Currently{} {C:red}+#3#{} {C:inactive}Mult){}'
 				},
 			},
 		},
