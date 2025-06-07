@@ -233,15 +233,25 @@ SMODS.Joker {
         end
 		if context.post_trigger and context.other_context ~= context.repetition then
 			if context.other_card == other_joker then
-				card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
-				{ message = localize('k_caught'), colour = G.C.BLUE })
-				card_eval_status_text(context.blueprint_card or card, 'dollars', card.ability.extra.dollars, nil, nil, nil)
-				return {
-					remove_default_message = true,
-					dollars = card.ability.extra.dollars,
-					card = card or context.other_card or nil,
-				}
+				if other_joker.ability.name == 'Mime' or other_joker.ability.name == 'Blueprint' or 
+				other_joker.ability.name == 'Brainstorm' then
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = localize('k_notallowed'), colour = G.C.BLACK })
+					return {
+						remove_default_message = true,
+						card = card or context.other_card or nil,
+					}
+				else
+					card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = localize('k_caught'), colour = G.C.BLUE })
+					card_eval_status_text(context.blueprint_card or card, 'dollars', card.ability.extra.dollars, nil, nil, nil)
+					return {
+						remove_default_message = true,
+						dollars = card.ability.extra.dollars,
+						card = card or context.other_card or nil,
+					}
+				end
 			end
 		end
 		if context.after and context.main_eval then
@@ -289,13 +299,11 @@ SMODS.Joker {
 				end
 			end
 			if other_joker.ability.name == 'Seltzer' then
-				local j = 0
-				while j < other_joker.ability.extra do
-					for i = 1, #context.full_hand do
-						card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
-					end
-					j = j + 1
+				
+				for i = 1, #context.full_hand do
+					card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
 				end
+				
 				local bufdollar = card.ability.extra.dollar_buffer
 				card.ability.extra.dollar_buffer = 0
 				if bufdollar > 0 then
