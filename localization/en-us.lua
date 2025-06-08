@@ -41,7 +41,7 @@ return {
 				text = {
 					'When the effect of the {C:attention}Joker{}',
 					'on the right {C:attention}triggers{}',
-					'earn {C:money}$#1#{} and earn {C:red}+#2#{} Mult.',
+					'earn {C:money}$#1#{} and {C:red}+#2#{} Mult.',
 					'Mult {C:attention}resets{} after each hand played.',
 					'{C:inactive}(Currently{} {C:red}+#3#{} {C:inactive}Mult){}'
 				},
@@ -71,7 +71,10 @@ return {
         suits_plural={},
         suits_singular={},
         tutorial={},
-        v_dictionary={},
-        v_text={},
+        dictionary={
+			k_caught = "Caught!",
+			k_buckle = "Buckle up!",
+		},
+        text={},
     },
 }

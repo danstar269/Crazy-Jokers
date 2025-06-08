@@ -179,7 +179,7 @@ SMODS.Joker {
             G.GAME.current_round.reroll_cost = math.max(0, G.GAME.current_round.reroll_cost - card.ability.extra.discount_reroll)
             return true end }))
 		card_eval_status_text(card, 'extra', nil, nil, nil,
-		{ message = 'Buckle up!', colour = G.C.BLACK, instant = true })
+		{ message = localize('k_buckle'), colour = G.C.BLACK, instant = true })
 	end,
 	remove_from_deck = function(self, card, from_debuff)
 		G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discard_size
@@ -225,29 +225,28 @@ SMODS.Joker {
         for i = 1, #G.jokers.cards do
             if G.jokers.cards[i] == card then other_joker = G.jokers.cards[i + 1] end
         end
-		if context.post_trigger then
-			if context.other_card == other_joker then
+		if context.post_trigger and context.other_context ~= context.individual and context.other_context.cardarea ~= G.play then
+			if context.other_card == other_joker and context.other_context ~= context.repetition then
 				card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+				{ message = localize('k_caught'), colour = G.C.BLUE })
+				card_eval_status_text(context.blueprint_card or card, 'dollars', card.ability.extra.dollars, nil, nil, nil)
+				G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + card.ability.extra.dollars
 				return {
-					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
-					{ message = 'Caught!', colour = G.C.BLUE, instant = true }),
-					card = card or context.other_card or nil,
+					remove_default_message = true,
 					dollars = card.ability.extra.dollars,
+					card = card or context.other_card or nil,
 				}
 			end
 		end
 		if context.joker_main then
 			local last_mult = card.ability.extra.mult_buffer
 			card.ability.extra.mult_buffer = 0.0
-			return {
-				mult = last_mult,
-			}
-		end
-		if context.after and context.cardarea == G.jokers then
-			return {
-				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
-				{ message = localize('k_reset') }),
-			}
+			if last_mult > 0.0 then
+				return {
+					mult = last_mult,
+				}
+			end
 		end
 	end
 }
