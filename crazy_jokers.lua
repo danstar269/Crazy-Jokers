@@ -203,7 +203,7 @@ SMODS.Joker {
 	key = "cameraman",
 	name = "cameraman",
 	atlas = "crazy_jokers_atlas",
-	pos = {x = 3, y = 0},
+	pos = {x = 4, y = 0},
 	rarity = 1,
 	cost = 5,
 	blueprint_compat = true,
