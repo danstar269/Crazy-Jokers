@@ -234,18 +234,19 @@ SMODS.Joker {
 		if context.post_trigger and context.other_context ~= context.repetition then
 			if context.other_card == other_joker then
 				if other_joker.ability.name == 'Mime' or other_joker.ability.name == 'Blueprint' or 
-				other_joker.ability.name == 'Brainstorm' then
+				other_joker.ability.name == 'Brainstorm' or other_joker.ability.name == 'cry-Canvas' then
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
-					{ message = localize('k_notallowed'), colour = G.C.BLACK })
+					{ message = localize('k_copyrighted'), colour = G.C.BLACK })
 					return {
 						remove_default_message = true,
 						card = card or context.other_card or nil,
 					}
 				else
-					card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_caught'), colour = G.C.BLUE })
 					card_eval_status_text(context.blueprint_card or card, 'dollars', card.ability.extra.dollars, nil, nil, nil)
+					card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+					card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
 					return {
 						remove_default_message = true,
 						dollars = card.ability.extra.dollars,
@@ -254,108 +255,232 @@ SMODS.Joker {
 				end
 			end
 		end
+		
+		--recording
+		if (context.before and context.main_eval and other_joker ~= nil) then
+			return {
+				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+				{ message = localize('k_recording'), colour = G.C.BLACK })
+			}
+		end
+		
+		
 		if context.after and context.main_eval then
-			if other_joker.ability.name == 'Sock and Buskin' then
-				local j = 0
-				while j < other_joker.ability.extra do
-					for i = 1, #context.full_hand do
-						if context.full_hand[i]:is_face() then
+			--For vanilla retrigger jokers
+			if other_joker ~= nil then
+				if other_joker.ability.name == 'Sock and Buskin' then
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = localize('k_playback'), colour = G.C.BLACK })
+					local j = 0
+					while j < other_joker.ability.extra do
+						for i = 1, #context.full_hand do
+							if context.full_hand[i]:is_face() then
+								card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+								card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
+								card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+							end
+						end
+						j = j + 1
+					end
+					local bufdollar = card.ability.extra.dollar_buffer
+					card.ability.extra.dollar_buffer = 0
+					if bufdollar > 0 then
+						return {
+							dollars = bufdollar,
+						}
+					else 
+						return
+					end
+				end
+				if other_joker.ability.name == 'Hanging Chad' then
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = localize('k_playback'), colour = G.C.BLACK })
+					local i = 0
+					while i < 2 do
+						card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+						card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
+						i = i + 1
+					end
+					return {
+						dollars = card.ability.extra.dollars * 2,
+					}
+				end
+				if other_joker.ability.name == 'Dusk' and G.GAME.current_round.hands_left == 0 then
+					local j = 0
+					while j < other_joker.ability.extra do
+						for i = 1, #context.full_hand do
+							card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+							card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
 							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
 						end
+						j = j + 1
 					end
-					j = j + 1
+					local bufdollar = card.ability.extra.dollar_buffer
+					card.ability.extra.dollar_buffer = 0
+					if bufdollar > 0 then
+						return {
+							dollars = bufdollar,
+						}
+					else 
+						return
+					end
 				end
-				local bufdollar = card.ability.extra.dollar_buffer
-				card.ability.extra.dollar_buffer = 0
-				if bufdollar > 0 then
-					return {
-						dollars = bufdollar,
-					}
-				else 
-					return
-				end
-			end
-			if other_joker.ability.name == 'Hanging Chad' then
-				return {
-					dollars = card.ability.extra.dollars * 2,
-				}
-			end
-			if other_joker.ability.name == 'Dusk' and G.GAME.current_round.hands_left == 0 then
-				local j = 0
-				while j < other_joker.ability.extra do
+				if other_joker.ability.name == 'Seltzer' then
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = localize('k_playback'), colour = G.C.BLACK })
 					for i = 1, #context.full_hand do
+						card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+						card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
 						card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
 					end
-					j = j + 1
+					local bufdollar = card.ability.extra.dollar_buffer
+					card.ability.extra.dollar_buffer = 0
+					if bufdollar > 0 then
+						return {
+							dollars = bufdollar,
+						}
+					else 
+						return
+					end
 				end
-				local bufdollar = card.ability.extra.dollar_buffer
-				card.ability.extra.dollar_buffer = 0
-				if bufdollar > 0 then
-					return {
-						dollars = bufdollar,
-					}
-				else 
-					return
+				if other_joker.ability.name == 'Hack' then
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = localize('k_playback'), colour = G.C.BLACK })
+					local j = 0
+					while j < other_joker.ability.extra do
+						for i = 1, #context.full_hand do
+							if (context.full_hand[i]:get_id() == 2 or 
+								context.full_hand[i]:get_id() == 3 or 
+								context.full_hand[i]:get_id() == 4 or 
+								context.full_hand[i]:get_id() == 5) then
+									card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+									card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
+									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+							end
+						end
+						j = j + 1
+					end
+					local bufdollar = card.ability.extra.dollar_buffer
+					card.ability.extra.dollar_buffer = 0
+					if bufdollar > 0 then
+						return {
+							dollars = bufdollar,
+						}
+					else 
+						return
+					end
 				end
-			end
-			if other_joker.ability.name == 'Seltzer' then
+				if other_joker.ability.name == 'arizona_ranger' then
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = localize('k_playback'), colour = G.C.BLACK })
+					local j = 0
+					while j < other_joker.ability.extra.repetitions do
+						for i = 1, #context.full_hand do
+							card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+							card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
+							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+						end
+						j = j + 1
+					end
+					local bufdollar = card.ability.extra.dollar_buffer
+					card.ability.extra.dollar_buffer = 0
+					if bufdollar > 0 then
+						return {
+							dollars = bufdollar,
+						}
+					else 
+						return
+					end
+				end
 				
-				for i = 1, #context.full_hand do
-					card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
-				end
-				
-				local bufdollar = card.ability.extra.dollar_buffer
-				card.ability.extra.dollar_buffer = 0
-				if bufdollar > 0 then
-					return {
-						dollars = bufdollar,
-					}
-				else 
-					return
-				end
-			end
-			if other_joker.ability.name == 'Hack' then
-				local j = 0
-				while j < other_joker.ability.extra do
-					for i = 1, #context.full_hand do
-						if (context.full_hand[i]:get_id() == 2 or 
-							context.full_hand[i]:get_id() == 3 or 
-							context.full_hand[i]:get_id() == 4 or 
-							context.full_hand[i]:get_id() == 5) then
-								card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+				--For modded jokers
+				if other_joker.ability.name ~= 'Mime' and 
+				other_joker.ability.name ~= 'Sock and Buskin' and
+				other_joker.ability.name ~= 'Hanging Chad' and 
+				other_joker.ability.name ~= 'Dusk' and 
+				other_joker.ability.name ~= 'Seltzer' and 
+				other_joker.ability.name ~= 'Hack' and
+				other_joker.ability.extra ~= nil and
+				type(other_joker.ability.extra) ~= 'number' and
+				(other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) then
+					if other_joker.ability.name == 'cry-weegaming' then
+						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+						{ message = localize('k_playback'), colour = G.C.BLACK })
+						local j = 0
+						while j < (other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) do
+							for i = 1, #context.full_hand do
+								if context.full_hand[i]:get_id() == 2 then
+									card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+									card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
+									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+								end
+							end
+							j = j + 1
+						end
+						local bufdollar = card.ability.extra.dollar_buffer
+						card.ability.extra.dollar_buffer = 0
+						if bufdollar > 0 then
+							return {
+								dollars = bufdollar,
+							}
+						else 
+							return
 						end
 					end
-					j = j + 1
-				end
-				local bufdollar = card.ability.extra.dollar_buffer
-				card.ability.extra.dollar_buffer = 0
-				if bufdollar > 0 then
-					return {
-						dollars = bufdollar,
-					}
-				else 
-					return
-				end
-			end
-			if other_joker.ability.name == 'arizona_ranger' then
-				local j = 0
-				while j < other_joker.ability.extra.repetitions do
-					for i = 1, #context.full_hand do
-						card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+					if other_joker.ability.name == 'cry-sock_and_sock' then
+						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+						{ message = localize('k_playback'), colour = G.C.BLACK })
+						local j = 0
+						while j < (other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) do
+							for i = 1, #context.full_hand do
+								if SMODS.has_enhancement(context.full_hand[i], "m_cry_abstract") then
+									card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+									card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
+									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+								end
+							end
+							j = j + 1
+						end
+						local bufdollar = card.ability.extra.dollar_buffer
+						card.ability.extra.dollar_buffer = 0
+						if bufdollar > 0 then
+							return {
+								dollars = bufdollar,
+							}
+						else 
+							return
+						end
 					end
-					j = j + 1
+					
+					--general case for any joker that is not specific, earlier returns shoud end the calc early
+					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+					{ message = localize('k_playback'), colour = G.C.BLACK })
+					local j = 0
+					while j < (other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) do
+						for i = 1, #context.full_hand do
+							card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+							card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
+							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+						end
+						j = j + 1
+					end
+					local bufdollar = card.ability.extra.dollar_buffer
+					card.ability.extra.dollar_buffer = 0
+					if bufdollar > 0 then
+						return {
+							dollars = bufdollar,
+						}
+					else 
+						return
+					end
 				end
-				local bufdollar = card.ability.extra.dollar_buffer
-				card.ability.extra.dollar_buffer = 0
-				if bufdollar > 0 then
-					return {
-						dollars = bufdollar,
-					}
-				else 
-					return
-				end
+				
 			end
+			
+			
 		end
+		
+		--main scoring/end of scoring
 		if context.joker_main then
 			local last_mult = card.ability.extra.mult_buffer
 			card.ability.extra.mult_buffer = 0.0

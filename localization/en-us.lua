@@ -74,7 +74,9 @@ return {
         dictionary={
 			k_caught = "Caught!",
 			k_buckle = "Buckle up!",
-			k_notallowed = "Not allowed",
+			k_copyrighted = "Copyrighted!",
+			k_recording = "Recording!",
+			k_playback = "Playback!",
 		},
         text={},
     },
