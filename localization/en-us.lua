@@ -77,6 +77,8 @@ return {
 			k_copyrighted = "Copyrighted!",
 			k_recording = "Recording!",
 			k_playback = "Playback!",
+			k_boring = "Boring...",
+			k_chad = "Gigachad!",
 		},
         text={},
     },

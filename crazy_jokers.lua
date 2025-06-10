@@ -403,6 +403,9 @@ SMODS.Joker {
 				other_joker.ability.extra ~= nil and
 				type(other_joker.ability.extra) ~= 'number' and
 				(other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) then
+				
+				
+					--Cryptid card retrigger jokers
 					if other_joker.ability.name == 'cry-weegaming' then
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_playback'), colour = G.C.BLACK })
@@ -451,8 +454,73 @@ SMODS.Joker {
 							return
 						end
 					end
+					if other_joker.ability.name == 'cry-nosound' then
+						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+						{ message = localize('k_playback'), colour = G.C.BLACK })
+						local j = 0
+						while j < (other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) do
+							for i = 1, #context.full_hand do
+								if context.full_hand[i]:get_id() == 7 then
+									card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
+									card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
+									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+								end
+							end
+							j = j + 1
+						end
+						local bufdollar = card.ability.extra.dollar_buffer
+						card.ability.extra.dollar_buffer = 0
+						if bufdollar > 0 then
+							return {
+								dollars = bufdollar,
+							}
+						else 
+							return
+						end
+					end
+					
+					
+					--Cryptid joker retriggerers
+					if other_joker.ability.name == 'cry-Boredom' then
+						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+						{ message = localize('k_boring'), colour = G.C.BLACK })
+						return {
+							dollars = card.ability.extra.dollars,
+						}
+					end
+					if other_joker.ability.name == 'cry-Chad' then
+						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+						{ message = localize('k_chad'), colour = G.C.BLACK })
+						return {
+							dollars = card.ability.extra.dollars * 10,
+						}
+					end
+					if other_joker.ability.name == 'cry-rnjoker Joker' then
+						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+						{ message = localize('k_boring'), colour = G.C.BLACK })
+						return {
+							dollars = card.ability.extra.dollars,
+						}
+					end
+					if other_joker.ability.name == 'cry-Spectrogram' then
+						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+						{ message = localize('k_boring'), colour = G.C.BLACK })
+						return {
+							dollars = card.ability.extra.dollars,
+						}
+					end
+					if other_joker.ability.name == 'cry-loopy' then
+						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
+						{ message = localize('k_boring'), colour = G.C.BLACK })
+						return {
+							dollars = card.ability.extra.dollars,
+						}
+					end
+					
 					
 					--general case for any joker that is not specific, earlier returns shoud end the calc early
+					--if the retriggerer is a joker retrigger, there is no way to know who he is retriggering in this context, as
+					--the normal post_trigger is not working to capture the joker retrigger and normal retriggering as well
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_playback'), colour = G.C.BLACK })
 					local j = 0
