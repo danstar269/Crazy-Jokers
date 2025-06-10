@@ -160,14 +160,19 @@ SMODS.Joker {
 			discard_size = 1,
 			shop_size = 2,
 			discount_reroll = 5,
-		}
+		},
+		immutable {
+			shop_size_base = 2,
+			max_shop_size = 4,
+			max_discount_reroll = 10,
+		},
 	},
     loc_vars = function(self, info_queue, card)
         return { 
 			vars = { 
 				card.ability.extra.discard_size,
-				card.ability.extra.shop_size,
-				card.ability.extra.discount_reroll
+				math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size),
+				math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll),
 			} 
 		}
     end,
@@ -175,11 +180,11 @@ SMODS.Joker {
 		G.GAME.round_resets.discards = G.GAME.round_resets.discards + card.ability.extra.discard_size
         ease_discard(card.ability.extra.discard_size)
 		G.E_MANAGER:add_event(Event({func = function()
-            change_shop_size(card.ability.extra.shop_size)
+            change_shop_size(math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size))
             return true end }))
 		G.E_MANAGER:add_event(Event({func = function()
-            G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - card.ability.extra.discount_reroll
-            G.GAME.current_round.reroll_cost = math.max(0, G.GAME.current_round.reroll_cost - card.ability.extra.discount_reroll)
+            G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll)
+            G.GAME.current_round.reroll_cost = math.max(0, G.GAME.current_round.reroll_cost - math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll))
             return true end }))
 		card_eval_status_text(card, 'extra', nil, nil, nil,
 		{ message = localize('k_buckle'), colour = G.C.BLACK, instant = true })
@@ -188,12 +193,26 @@ SMODS.Joker {
 		G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discard_size
         ease_discard(-card.ability.extra.discard_size)
 		G.E_MANAGER:add_event(Event({func = function()
-            change_shop_size(-card.ability.extra.shop_size)
+            change_shop_size(-math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size))
             return true end }))
 		G.E_MANAGER:add_event(Event({func = function()
-            G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + card.ability.extra.discount_reroll
+            G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll)
             return true end }))
 	end,
+	calculate = function(self, card, context)
+		if context.reroll_shop then
+			if math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size) > card.ability.immutable.shop_size_base then
+				card.ability.immutable.shop_size_base = math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)
+				G.E_MANAGER:add_event(Event({func = function()
+				change_shop_size(math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size))
+				return true end }))
+				return {
+					card_eval_status_text(card, 'extra', nil, nil, nil,
+					{ message = localize('k_buckle'), colour = G.C.BLACK, instant = true })
+				}
+			end
+			--if G.GAME.shop.joker_max
+		end
 }
 
 
@@ -221,8 +240,6 @@ SMODS.Joker {
 			vars = { 
 				card.ability.extra.dollars,
 				card.ability.extra.mult,
-				card.ability.extra.mult_buffer,
-				card.ability.extra.dollar_buffer,
 			} 
 		}
     end,
