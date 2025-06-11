@@ -18,7 +18,7 @@ return {
 			j_crazy_arizona_ranger = {
 				name = 'Arizona Ranger',
 				text = {
-					'{C:red}+10{} Mult.',
+					'{C:red}+#1#{} Mult.',
 					'This Joker gains {C:red}+#2#{} Mult if {C:attention}poker hand{}',
 					'contains a {C:attention}#4#{}',
 					"poker hand changes",
@@ -32,6 +32,7 @@ return {
 			j_crazy_blackdeck_joker = {
 				name = 'Black Deck Enjoyer',
 				text = {
+					'{C:red}+#4#{} Mult.',
 					'{C:attention}+#1# {}{C:red}Discard{} and {C:attention}+#2#{} {C:money}Shop{} slots.',
 					'Discount {C:green}rerolls{} by {C:money}$#3#{} each round.'
 				},
@@ -73,12 +74,12 @@ return {
         tutorial={},
         dictionary={
 			k_caught = "Caught!",
-			k_buckle = "Buckle up!",
 			k_copyrighted = "Copyrighted!",
 			k_recording = "Recording!",
 			k_playback = "Playback!",
 			k_boring = "Boring...",
 			k_chad = "Gigachad!",
+			k_push = "Push",
 		},
         text={},
     },

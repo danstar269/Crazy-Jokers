@@ -72,16 +72,20 @@ SMODS.Joker{
 			poker_hand = 'High Card',
 			repetitions = 1,
 			suit = 'Hearts'
-		}
+		},
+		immutable = {
+			max_dollars = 10,
+			max_repetitions = 4,
+		},
 	},
 	loc_vars = function(self, info_queue, card)
 		return {
 			vars = {
 				card.ability.extra.mult,
 				card.ability.extra.mult_gain,
-				card.ability.extra.dollars,
+				math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 				localize(card.ability.extra.poker_hand, 'poker_hands'),
-				card.ability.extra.repetitions,
+				math.min(card.ability.extra.repetitions, card.ability.immutable.max_repetitions),
 				localize(card.ability.extra.suit, 'suits_singular')
 			}
 		}
@@ -90,7 +94,7 @@ SMODS.Joker{
 		if context.destroying_card and not context.blueprint then
 			if context.destroying_card:is_suit(card.ability.extra.suit) then
 				return { 
-					dollars = card.ability.extra.dollars,
+					dollars = math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 					remove = true
 				}
 			end
@@ -123,7 +127,7 @@ SMODS.Joker{
         end
 		if context.repetition and context.cardarea == G.play then
             return {
-                repetitions = card.ability.extra.repetitions
+                repetitions = math.min(card.ability.extra.repetitions, card.ability.immutable.max_repetitions),
             }
         end
 		if context.joker_main then
@@ -161,10 +165,11 @@ SMODS.Joker {
 			shop_size = 2,
 			discount_reroll = 5,
 		},
-		immutable {
+		immutable = {
 			shop_size_base = 2,
 			max_shop_size = 4,
 			max_discount_reroll = 10,
+			discount_amount_base = 5,
 		},
 	},
     loc_vars = function(self, info_queue, card)
@@ -176,43 +181,88 @@ SMODS.Joker {
 			} 
 		}
     end,
+	
     add_to_deck = function(self, card, from_debuff)
 		G.GAME.round_resets.discards = G.GAME.round_resets.discards + card.ability.extra.discard_size
         ease_discard(card.ability.extra.discard_size)
 		G.E_MANAGER:add_event(Event({func = function()
-            change_shop_size(math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size))
-            return true end }))
+            change_shop_size(math.floor(math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size)))
+			card.ability.immutable.shop_size_base = math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)
+		return true end }))
+		
 		G.E_MANAGER:add_event(Event({func = function()
-            G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll)
-            G.GAME.current_round.reroll_cost = math.max(0, G.GAME.current_round.reroll_cost - math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll))
-            return true end }))
+			G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - math.ceil((card.ability.immutable.discount_amount_base + 
+			(math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll) - card.ability.immutable.discount_amount_base)))
+		return true end }))
+	
 		card_eval_status_text(card, 'extra', nil, nil, nil,
-		{ message = localize('k_buckle'), colour = G.C.BLACK, instant = true })
+		{ message = localize('k_push'), colour = G.C.BLACK, instant = true })
+		
 	end,
+
 	remove_from_deck = function(self, card, from_debuff)
 		G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discard_size
         ease_discard(-card.ability.extra.discard_size)
 		G.E_MANAGER:add_event(Event({func = function()
-            change_shop_size(-math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size))
-            return true end }))
-		G.E_MANAGER:add_event(Event({func = function()
-            G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll)
-            return true end }))
+            change_shop_size(-math.floor(card.ability.immutable.shop_size_base))
+		return true end }))
+
+		if math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll) > card.ability.immutable.discount_amount_base then
+			G.E_MANAGER:add_event(Event({func = function()
+				G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + card.ability.immutable.discount_amount_base
+				card.ability.immutable.discount_amount_base = math.min(card.ability.immutable.max_discount_reroll, 
+				card.ability.extra.discount_reroll)
+			return true end }))
+		else
+			G.E_MANAGER:add_event(Event({func = function()
+				G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + math.ceil(math.min(card.ability.immutable.max_discount_reroll, 
+				card.ability.extra.discount_reroll))
+			return true end }))
+		end
+		
+		
 	end,
+	
 	calculate = function(self, card, context)
 		if context.reroll_shop then
-			if math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size) > card.ability.immutable.shop_size_base then
-				card.ability.immutable.shop_size_base = math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)
+			local changed = 0
+			if (math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)) > card.ability.immutable.shop_size_base then
+				--G.GAME.shop.joker_max: amount of base actual shop slots
+				changed = 1
+				
+				--refresh shop size correctly
 				G.E_MANAGER:add_event(Event({func = function()
-				change_shop_size(math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size))
+					change_shop_size(-card.ability.immutable.shop_size_base)
 				return true end }))
+				G.E_MANAGER:add_event(Event({func = function()
+					change_shop_size(G.GAME.shop.joker_max + math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size))
+				return true end }))
+				card.ability.immutable.shop_size_base = math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)
+				
+			end
+			
+			if math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll) > card.ability.immutable.discount_amount_base then
+				
+				changed = 1
+				
+				G.E_MANAGER:add_event(Event({func = function()
+					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - math.ceil((math.min(card.ability.immutable.max_discount_reroll, 
+					card.ability.extra.discount_reroll) - card.ability.immutable.discount_amount_base))
+					card.ability.immutable.discount_amount_base = math.min(card.ability.immutable.max_discount_reroll, 
+					card.ability.extra.discount_reroll)
+				return true end }))
+			end
+			
+			if changed == 1 then
 				return {
 					card_eval_status_text(card, 'extra', nil, nil, nil,
-					{ message = localize('k_buckle'), colour = G.C.BLACK, instant = true })
+					{ message = localize('k_push'), colour = G.C.BLACK, instant = true })
 				}
+			else
+				return
 			end
-			--if G.GAME.shop.joker_max
 		end
+	end
 }
 
 
@@ -233,13 +283,18 @@ SMODS.Joker {
 			mult = 5,
 			mult_buffer = 0,
 			dollar_buffer = 0,
-		}
+		},
+		immutable = {
+			max_dollars = 10,
+			max_repetitions = 1,
+		},
 	},
 	loc_vars = function(self, info_queue, card)
 		return { 
 			vars = { 
-				card.ability.extra.dollars,
+				math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 				card.ability.extra.mult,
+				card.ability.extra.mult_buffer,
 			} 
 		}
     end,
@@ -261,12 +316,12 @@ SMODS.Joker {
 				else
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_caught'), colour = G.C.BLUE })
-					card_eval_status_text(context.blueprint_card or card, 'dollars', card.ability.extra.dollars, nil, nil, nil)
+					card_eval_status_text(context.blueprint_card or card, 'dollars', math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars), nil, nil, nil)
 					card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
 					card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
 					return {
 						remove_default_message = true,
-						dollars = card.ability.extra.dollars,
+						dollars = math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 						card = card or context.other_card or nil,
 					}
 				end
@@ -289,12 +344,10 @@ SMODS.Joker {
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_playback'), colour = G.C.BLACK })
 					local j = 0
-					while j < other_joker.ability.extra do
+					while j < card.ability.immutable.max_repetitions do
 						for i = 1, #context.full_hand do
 							if context.full_hand[i]:is_face() then
-								card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-								card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-								card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+								card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 							end
 						end
 						j = j + 1
@@ -312,23 +365,15 @@ SMODS.Joker {
 				if other_joker.ability.name == 'Hanging Chad' then
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_playback'), colour = G.C.BLACK })
-					local i = 0
-					while i < 2 do
-						card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-						card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-						i = i + 1
-					end
 					return {
-						dollars = card.ability.extra.dollars * 2,
+						dollars = math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 					}
 				end
 				if other_joker.ability.name == 'Dusk' and G.GAME.current_round.hands_left == 0 then
 					local j = 0
-					while j < other_joker.ability.extra do
+					while j < card.ability.immutable.max_repetitions do
 						for i = 1, #context.full_hand do
-							card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-							card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 						end
 						j = j + 1
 					end
@@ -346,9 +391,7 @@ SMODS.Joker {
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_playback'), colour = G.C.BLACK })
 					for i = 1, #context.full_hand do
-						card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-						card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-						card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+						card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 					end
 					local bufdollar = card.ability.extra.dollar_buffer
 					card.ability.extra.dollar_buffer = 0
@@ -364,15 +407,13 @@ SMODS.Joker {
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_playback'), colour = G.C.BLACK })
 					local j = 0
-					while j < other_joker.ability.extra do
+					while j < card.ability.immutable.max_repetitions do
 						for i = 1, #context.full_hand do
 							if (context.full_hand[i]:get_id() == 2 or 
 								context.full_hand[i]:get_id() == 3 or 
 								context.full_hand[i]:get_id() == 4 or 
 								context.full_hand[i]:get_id() == 5) then
-									card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-									card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 							end
 						end
 						j = j + 1
@@ -391,11 +432,9 @@ SMODS.Joker {
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_playback'), colour = G.C.BLACK })
 					local j = 0
-					while j < other_joker.ability.extra.repetitions do
+					while j < card.ability.immutable.max_repetitions do
 						for i = 1, #context.full_hand do
-							card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-							card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 						end
 						j = j + 1
 					end
@@ -427,12 +466,10 @@ SMODS.Joker {
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_playback'), colour = G.C.BLACK })
 						local j = 0
-						while j < (other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) do
+						while j < card.ability.immutable.max_repetitions do
 							for i = 1, #context.full_hand do
 								if context.full_hand[i]:get_id() == 2 then
-									card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-									card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 								end
 							end
 							j = j + 1
@@ -451,12 +488,10 @@ SMODS.Joker {
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_playback'), colour = G.C.BLACK })
 						local j = 0
-						while j < (other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) do
+						while j < card.ability.immutable.max_repetitions do
 							for i = 1, #context.full_hand do
 								if SMODS.has_enhancement(context.full_hand[i], "m_cry_abstract") then
-									card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-									card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 								end
 							end
 							j = j + 1
@@ -475,12 +510,10 @@ SMODS.Joker {
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_playback'), colour = G.C.BLACK })
 						local j = 0
-						while j < (other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) do
+						while j < card.ability.immutable.max_repetitions do
 							for i = 1, #context.full_hand do
 								if context.full_hand[i]:get_id() == 7 then
-									card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-									card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+									card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 								end
 							end
 							j = j + 1
@@ -502,35 +535,35 @@ SMODS.Joker {
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_boring'), colour = G.C.BLACK })
 						return {
-							dollars = card.ability.extra.dollars,
+							dollars = math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 						}
 					end
 					if other_joker.ability.name == 'cry-Chad' then
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_chad'), colour = G.C.BLACK })
 						return {
-							dollars = card.ability.extra.dollars * 10,
+							dollars = math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars) * 3,
 						}
 					end
 					if other_joker.ability.name == 'cry-rnjoker Joker' then
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_boring'), colour = G.C.BLACK })
 						return {
-							dollars = card.ability.extra.dollars,
+							dollars = math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 						}
 					end
 					if other_joker.ability.name == 'cry-Spectrogram' then
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_boring'), colour = G.C.BLACK })
 						return {
-							dollars = card.ability.extra.dollars,
+							dollars = math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 						}
 					end
 					if other_joker.ability.name == 'cry-loopy' then
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_boring'), colour = G.C.BLACK })
 						return {
-							dollars = card.ability.extra.dollars,
+							dollars = math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars),
 						}
 					end
 					
@@ -541,11 +574,9 @@ SMODS.Joker {
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_playback'), colour = G.C.BLACK })
 					local j = 0
-					while j < (other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) do
+					while j < card.ability.immutable.max_repetitions do
 						for i = 1, #context.full_hand do
-							card.ability.extra.mult_buffer = card.ability.extra.mult_buffer + card.ability.extra.mult
-							card_eval_status_text(context.blueprint_card or card, 'mult', card.ability.extra.mult_buffer, nil, nil, nil)
-							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + card.ability.extra.dollars
+							card.ability.extra.dollar_buffer = card.ability.extra.dollar_buffer + math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars)
 						end
 						j = j + 1
 					end
