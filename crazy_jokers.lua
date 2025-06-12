@@ -187,7 +187,8 @@ SMODS.Joker {
     end,
 	
     add_to_deck = function(self, card, from_debuff)
-		
+	
+		--discards
 		G.GAME.round_resets.discards = G.GAME.round_resets.discards + math.min(card.ability.immutable.max_discard_size, 
 		card.ability.extra.discard_size)
 		ease_discard(math.min(card.ability.immutable.max_discard_size, 
@@ -195,16 +196,19 @@ SMODS.Joker {
 		card.ability.immutable.discard_size_base = math.min(card.ability.immutable.max_discard_size, 
 		card.ability.extra.discard_size)
 		
+		--shop size
 		G.E_MANAGER:add_event(Event({func = function()
             change_shop_size(math.floor(math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size)))
 			card.ability.immutable.shop_size_base = math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)
 		return true end }))
 		
+		--reroll
 		G.E_MANAGER:add_event(Event({func = function()
 			G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - (card.ability.immutable.discount_amount_base + 
 			(math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll) - card.ability.immutable.discount_amount_base))
 		return true end }))
-	
+		
+		--push
 		card_eval_status_text(card, 'extra', nil, nil, nil,
 		{ message = localize('k_push'), colour = G.C.BLACK, instant = true })
 		
@@ -212,6 +216,7 @@ SMODS.Joker {
 
 	remove_from_deck = function(self, card, from_debuff)
 	
+		--discards
 		if (math.min(card.ability.extra.discard_size, card.ability.immutable.max_discard_size) > card.ability.immutable.discard_size_base) then
 			G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.immutable.discard_size_base
 			ease_discard(-card.ability.immutable.discard_size_base)
@@ -224,10 +229,12 @@ SMODS.Joker {
 			card.ability.extra.discard_size))
 		end
 		
+		--shop size
 		G.E_MANAGER:add_event(Event({func = function()
             change_shop_size(-math.floor(card.ability.immutable.shop_size_base))
 		return true end }))
-
+		
+		--reroll
 		if math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll) > card.ability.immutable.discount_amount_base then
 			G.E_MANAGER:add_event(Event({func = function()
 				G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + card.ability.immutable.discount_amount_base
@@ -246,19 +253,12 @@ SMODS.Joker {
 	
 	calculate = function(self, card, context)
 		if context.reroll_shop then
+		
+			local changed = 0
 			
-			if (G.GAME.current_round.reroll_cost < 0) and (G.GAME.current_round.reroll_cost > -0.001) then
-				G.E_MANAGER:add_event(Event({func = function()
-					G.GAME.current_round.reroll_cost = 0
-					local integer, fraction = math.modf(G.GAME.round_resets.reroll_cost)
-					local new_fraction = fraction * 10
-					new_fraction = new_fraction - (new_fraction % 1)
-					new_fraction = new_fraction / 10
-					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - fraction
-					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + new_fraction
-				return true end }))
-			end
-			if (G.GAME.current_round.reroll_cost > 0) and (G.GAME.current_round.reroll_cost < 0.001) then
+			--check for underflow
+			if (G.GAME.current_round.reroll_cost < 0) and (G.GAME.current_round.reroll_cost > -0.001) or
+			(G.GAME.current_round.reroll_cost > 0) and (G.GAME.current_round.reroll_cost < 0.001) then
 				G.E_MANAGER:add_event(Event({func = function()
 					G.GAME.current_round.reroll_cost = 0
 					local integer, fraction = math.modf(G.GAME.round_resets.reroll_cost)
@@ -270,11 +270,10 @@ SMODS.Joker {
 				return true end }))
 			end
 		
-			local changed = 0
+			--refresh shop size correctly
 			if (math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)) > card.ability.immutable.shop_size_base then
 				--G.GAME.shop.joker_max: amount of base actual shop slots
 				changed = 1
-				
 				--refresh shop size correctly
 				G.E_MANAGER:add_event(Event({func = function()
 					change_shop_size(-card.ability.immutable.shop_size_base)
@@ -286,10 +285,9 @@ SMODS.Joker {
 				
 			end
 			
+			--reroll discount correctly
 			if math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll) > card.ability.immutable.discount_amount_base then
-				
 				changed = 1
-				
 				G.E_MANAGER:add_event(Event({func = function()
 					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - (math.min(card.ability.immutable.max_discount_reroll, 
 					card.ability.extra.discount_reroll) - card.ability.immutable.discount_amount_base)
@@ -298,10 +296,9 @@ SMODS.Joker {
 				return true end }))
 			end
 			
+			--give correct amount of discards
 			if (math.min(card.ability.extra.discard_size, card.ability.immutable.max_discard_size) > card.ability.immutable.discard_size_base) then
-				
 				changed = 1
-				
 				G.GAME.round_resets.discards = G.GAME.round_resets.discards + ((math.min(card.ability.immutable.max_discard_size, 
 				card.ability.extra.discard_size)) - card.ability.immutable.discard_size_base)
 				ease_discard(((math.min(card.ability.immutable.max_discard_size, 
@@ -310,6 +307,7 @@ SMODS.Joker {
 				card.ability.extra.discard_size)
 				
 			end
+			
 			
 			if changed == 1 then
 				return {
@@ -320,11 +318,14 @@ SMODS.Joker {
 				return
 			end
 		end
+		
+		--EoR mult for the meme
 		if context.joker_main then
             return {
                 mult = card.ability.extra.t_mult
             }
         end
+		
 	end
 }
 
@@ -362,12 +363,19 @@ SMODS.Joker {
 		}
     end,
 	calculate = function(self, card, context)
+	
+		--check for joker on the right of this card
 		local other_joker = nil
         for i = 1, #G.jokers.cards do
             if G.jokers.cards[i] == card then other_joker = G.jokers.cards[i + 1] end
         end
+		
+		--check if joker on the right have triggered
 		if context.post_trigger and context.other_context ~= context.repetition then
 			if context.other_card == other_joker then
+				
+				--got problems with copy cards not allowing to return the money and t_mult correctly, and simply decided to disable them
+				--and canvas is just built different, didn't even activated in the first place but is here just to make sure
 				if other_joker.ability.name == 'Mime' or other_joker.ability.name == 'Blueprint' or 
 				other_joker.ability.name == 'Brainstorm' or other_joker.ability.name == 'cry-Canvas' then
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
@@ -377,6 +385,7 @@ SMODS.Joker {
 						card = card or context.other_card or nil,
 					}
 				else
+					--caught a trigger
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_caught'), colour = G.C.BLUE })
 					card_eval_status_text(context.blueprint_card or card, 'dollars', math.min(card.ability.extra.dollars, card.ability.immutable.max_dollars), nil, nil, nil)
@@ -391,7 +400,7 @@ SMODS.Joker {
 			end
 		end
 		
-		--recording
+		--recording (literally just a message, but is cool)
 		if (context.before and context.main_eval and other_joker ~= nil) then
 			return {
 				card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
@@ -399,8 +408,10 @@ SMODS.Joker {
 			}
 		end
 		
-		
+		--that's my way of fix the problem, calculate past hand played the amount we should give of money (every card * amount of triggers
+		--was too busted, so I used only 1 amount of trigger to calculate the money)
 		if context.after and context.main_eval then
+			
 			--For vanilla retrigger jokers
 			if other_joker ~= nil then
 				if other_joker.ability.name == 'Sock and Buskin' then
@@ -523,8 +534,7 @@ SMODS.Joker {
 				type(other_joker.ability.extra) ~= 'number' and
 				(other_joker.ability.extra.repetitions or other_joker.ability.extra.retriggers) then
 				
-				
-					--Cryptid card retrigger jokers
+					--Cryptid cards retrigger jokers
 					if other_joker.ability.name == 'cry-weegaming' then
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_playback'), colour = G.C.BLACK })
@@ -592,8 +602,7 @@ SMODS.Joker {
 						end
 					end
 					
-					
-					--Cryptid joker retriggerers
+					--Cryptid joker retriggers
 					if other_joker.ability.name == 'cry-Boredom' then
 						card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 						{ message = localize('k_boring'), colour = G.C.BLACK })
@@ -630,10 +639,12 @@ SMODS.Joker {
 						}
 					end
 					
-					
 					--general case for any joker that is not specific, earlier returns shoud end the calc early
-					--if the retriggerer is a joker retrigger, there is no way to know who he is retriggering in this context, as
-					--the normal post_trigger is not working to capture the joker retrigger and normal retriggering as well
+					--if the retrigger is a joker retrigger, there is no way to know who he is retriggering in this context (as far as I know), 
+					--as the normal post_trigger is not working to capture the joker retrigger and normal retriggering as well
+					--(because I'm not counting repetition retriggers, and those all are repetition retriggers, but these retriggers
+					--don't let me return the $2 per trigger because technically the cards are retriggering, not the joker, and
+					--the context is a repetition, which wasn't letting return correctly as well)
 					card_eval_status_text(context.blueprint_card or card, 'extra', nil, nil, nil,
 					{ message = localize('k_playback'), colour = G.C.BLACK })
 					local j = 0
@@ -659,7 +670,7 @@ SMODS.Joker {
 			
 		end
 		
-		--main scoring/end of scoring
+		--main scoring
 		if context.joker_main then
 			local last_mult = card.ability.extra.mult_buffer
 			card.ability.extra.mult_buffer = 0.0
@@ -669,5 +680,6 @@ SMODS.Joker {
 				}
 			end
 		end
+		
 	end
 }
