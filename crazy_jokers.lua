@@ -246,6 +246,30 @@ SMODS.Joker {
 	
 	calculate = function(self, card, context)
 		if context.reroll_shop then
+			
+			if (G.GAME.current_round.reroll_cost < 0) and (G.GAME.current_round.reroll_cost > -0.001) then
+				G.E_MANAGER:add_event(Event({func = function()
+					G.GAME.current_round.reroll_cost = 0
+					local integer, fraction = math.modf(G.GAME.round_resets.reroll_cost)
+					local new_fraction = fraction * 10
+					new_fraction = new_fraction - (new_fraction % 1)
+					new_fraction = new_fraction / 10
+					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - fraction
+					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + new_fraction
+				return true end }))
+			end
+			if (G.GAME.current_round.reroll_cost > 0) and (G.GAME.current_round.reroll_cost < 0.001) then
+				G.E_MANAGER:add_event(Event({func = function()
+					G.GAME.current_round.reroll_cost = 0
+					local integer, fraction = math.modf(G.GAME.round_resets.reroll_cost)
+					local new_fraction = fraction * 10
+					new_fraction = new_fraction - (new_fraction % 1)
+					new_fraction = new_fraction / 10
+					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - fraction
+					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + new_fraction
+				return true end }))
+			end
+		
 			local changed = 0
 			if (math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)) > card.ability.immutable.shop_size_base then
 				--G.GAME.shop.joker_max: amount of base actual shop slots
