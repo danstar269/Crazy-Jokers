@@ -164,35 +164,45 @@ SMODS.Joker {
 			discard_size = 1,
 			shop_size = 2,
 			discount_reroll = 5,
+			t_mult = 4,
 		},
 		immutable = {
 			shop_size_base = 2,
 			max_shop_size = 4,
 			max_discount_reroll = 10,
 			discount_amount_base = 5,
+			discard_size_base = 1,
+			max_discard_size = 10,
 		},
 	},
     loc_vars = function(self, info_queue, card)
         return { 
 			vars = { 
-				card.ability.extra.discard_size,
+				math.min(card.ability.extra.discard_size, card.ability.immutable.max_discard_size),
 				math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size),
 				math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll),
+				card.ability.extra.t_mult,
 			} 
 		}
     end,
 	
     add_to_deck = function(self, card, from_debuff)
-		G.GAME.round_resets.discards = G.GAME.round_resets.discards + card.ability.extra.discard_size
-        ease_discard(card.ability.extra.discard_size)
+		
+		G.GAME.round_resets.discards = G.GAME.round_resets.discards + math.min(card.ability.immutable.max_discard_size, 
+		card.ability.extra.discard_size)
+		ease_discard(math.min(card.ability.immutable.max_discard_size, 
+		card.ability.extra.discard_size))
+		card.ability.immutable.discard_size_base = math.min(card.ability.immutable.max_discard_size, 
+		card.ability.extra.discard_size)
+		
 		G.E_MANAGER:add_event(Event({func = function()
             change_shop_size(math.floor(math.min(card.ability.extra.shop_size, card.ability.immutable.max_shop_size)))
 			card.ability.immutable.shop_size_base = math.min(card.ability.immutable.max_shop_size, card.ability.extra.shop_size)
 		return true end }))
 		
 		G.E_MANAGER:add_event(Event({func = function()
-			G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - math.ceil((card.ability.immutable.discount_amount_base + 
-			(math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll) - card.ability.immutable.discount_amount_base)))
+			G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - (card.ability.immutable.discount_amount_base + 
+			(math.min(card.ability.immutable.max_discount_reroll, card.ability.extra.discount_reroll) - card.ability.immutable.discount_amount_base))
 		return true end }))
 	
 		card_eval_status_text(card, 'extra', nil, nil, nil,
@@ -201,8 +211,19 @@ SMODS.Joker {
 	end,
 
 	remove_from_deck = function(self, card, from_debuff)
-		G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.extra.discard_size
-        ease_discard(-card.ability.extra.discard_size)
+	
+		if (math.min(card.ability.extra.discard_size, card.ability.immutable.max_discard_size) > card.ability.immutable.discard_size_base) then
+			G.GAME.round_resets.discards = G.GAME.round_resets.discards - card.ability.immutable.discard_size_base
+			ease_discard(-card.ability.immutable.discard_size_base)
+			card.ability.immutable.discard_size_base = math.min(card.ability.immutable.max_discard_size, 
+			card.ability.extra.discard_size)
+		else
+			G.GAME.round_resets.discards = G.GAME.round_resets.discards - math.min(card.ability.immutable.max_discard_size, 
+			card.ability.extra.discard_size)
+			ease_discard(-math.min(card.ability.immutable.max_discard_size, 
+			card.ability.extra.discard_size))
+		end
+		
 		G.E_MANAGER:add_event(Event({func = function()
             change_shop_size(-math.floor(card.ability.immutable.shop_size_base))
 		return true end }))
@@ -215,8 +236,8 @@ SMODS.Joker {
 			return true end }))
 		else
 			G.E_MANAGER:add_event(Event({func = function()
-				G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + math.ceil(math.min(card.ability.immutable.max_discount_reroll, 
-				card.ability.extra.discount_reroll))
+				G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost + math.min(card.ability.immutable.max_discount_reroll, 
+				card.ability.extra.discount_reroll)
 			return true end }))
 		end
 		
@@ -246,11 +267,24 @@ SMODS.Joker {
 				changed = 1
 				
 				G.E_MANAGER:add_event(Event({func = function()
-					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - math.ceil((math.min(card.ability.immutable.max_discount_reroll, 
-					card.ability.extra.discount_reroll) - card.ability.immutable.discount_amount_base))
+					G.GAME.round_resets.reroll_cost = G.GAME.round_resets.reroll_cost - (math.min(card.ability.immutable.max_discount_reroll, 
+					card.ability.extra.discount_reroll) - card.ability.immutable.discount_amount_base)
 					card.ability.immutable.discount_amount_base = math.min(card.ability.immutable.max_discount_reroll, 
 					card.ability.extra.discount_reroll)
 				return true end }))
+			end
+			
+			if (math.min(card.ability.extra.discard_size, card.ability.immutable.max_discard_size) > card.ability.immutable.discard_size_base) then
+				
+				changed = 1
+				
+				G.GAME.round_resets.discards = G.GAME.round_resets.discards + ((math.min(card.ability.immutable.max_discard_size, 
+				card.ability.extra.discard_size)) - card.ability.immutable.discard_size_base)
+				ease_discard(((math.min(card.ability.immutable.max_discard_size, 
+				card.ability.extra.discard_size)) - card.ability.immutable.discard_size_base))
+				card.ability.immutable.discard_size_base = math.min(card.ability.immutable.max_discard_size, 
+				card.ability.extra.discard_size)
+				
 			end
 			
 			if changed == 1 then
@@ -262,6 +296,11 @@ SMODS.Joker {
 				return
 			end
 		end
+		if context.joker_main then
+            return {
+                mult = card.ability.extra.t_mult
+            }
+        end
 	end
 }
 
